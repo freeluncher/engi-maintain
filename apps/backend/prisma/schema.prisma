@@ -1,0 +1,205 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// MODUL 1: MANAJEMEN ASET
+// ============================================
+
+model Asset {
+  id              String      @id @default(cuid())
+  name            String      @db.VarChar(255)
+  brand           String?     @db.VarChar(100)
+  serialNumber    String      @unique @db.VarChar(100)
+  category        String      @db.VarChar(50)   // Pneumatic, Electrical, Mechanical, etc.
+  status          AssetStatus @default(Operational)
+  location        String?     @db.VarChar(255)
+  purchaseDate    DateTime?
+  warrantyEnd     DateTime?
+  manualFileUrl   String?     @db.Text          // Link ke file PDF manual
+  sopFileUrl      String?     @db.Text          // Link ke file PDF SOP
+  qrCode          String?     @db.Text          // QR Code sebagai base64 atau URL
+  
+  // Timestamps
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  // Relations
+  maintenanceLogs MaintenanceLog[]
+  schedules       Schedule[]
+  alerts          MaintenanceAlert[]
+  
+  @@index([serialNumber])
+  @@index([status])
+  @@index([category])
+}
+
+enum AssetStatus {
+  Operational
+  Breakdown
+  UnderMaintenance
+}
+
+// ============================================
+// MODUL 2: MAINTENANCE LOG
+// ============================================
+
+model MaintenanceLog {
+  id              String        @id @default(cuid())
+  assetId         String
+  asset           Asset         @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  
+  // Maintenance details
+  type            MaintenanceType
+  description     String        @db.Text
+  technicianName  String        @db.VarChar(100)
+  maintenanceDate DateTime      @default(now())
+  downtimeHours   Float?        // Total downtime dalam jam
+  
+  // Parts replaced
+  partsUsed       String?       @db.Text      // JSON array of parts used
+  
+  // Relations
+  spareParts      MaintenanceSparePart[]
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  @@index([assetId])
+  @@index([maintenanceDate])
+  @@index([type])
+}
+
+enum MaintenanceType {
+  Corrective   // Perbaikan darurat karena breakdown
+  Preventive   // Perawatan terjadwal
+  Predictive   // Predictive maintenance (future)
+}
+
+model SparePart {
+  id              String    @id @default(cuid())
+  name            String    @db.VarChar(150)
+  partNumber      String    @unique @db.VarChar(100)
+  description     String?   @db.Text
+  stockQuantity   Int       @default(0)
+  minStockLevel   Int       @default(0)
+  unitPrice       Float?
+  supplier        String?   @db.VarChar(200)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  maintenanceLogs MaintenanceSparePart[]
+  
+  @@index([partNumber])
+  @@index([name])
+}
+
+model MaintenanceSparePart {
+  id                String        @id @default(cuid())
+  maintenanceLogId  String
+  maintenanceLog    MaintenanceLog @relation(fields: [maintenanceLogId], references: [id], onDelete: Cascade)
+  sparePartId       String
+  sparePart         SparePart     @relation(fields: [sparePartId], references: [id])
+  quantityUsed      Int           @default(1)
+  
+  @@unique([maintenanceLogId, sparePartId])
+}
+
+// ============================================
+// MODUL 3: PENJADWALAN (PREVENTIVE)
+// ============================================
+
+model Schedule {
+  id              String          @id @default(cuid())
+  assetId         String
+  asset           Asset           @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  
+  title           String          @db.VarChar(255)
+  description     String?         @db.Text
+  frequencyType   FrequencyType   // DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY, CUSTOM
+  frequencyValue  Int?            // Untuk CUSTOM: interval dalam hari
+  nextDueDate     DateTime        // Tanggal jadwal servis berikutnya
+  lastExecutedAt  DateTime?
+  
+  // Status
+  isActive        Boolean         @default(true)
+  isOverdue       Boolean         @default(false)  // Flag untuk overdue
+  
+  createdBy       String?         @db.VarChar(100)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  alerts          MaintenanceAlert[]
+
+  @@index([assetId])
+  @@index([nextDueDate])
+  @@index([isActive, isOverdue])
+}
+
+enum FrequencyType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  CUSTOM
+}
+
+// ============================================
+// TABEL UNTUK NOTIFIKASI (Opsional untuk MVP)
+// ============================================
+
+model MaintenanceAlert {
+  id              String        @id @default(cuid())
+  scheduleId      String
+  schedule        Schedule      @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  assetId         String
+  asset           Asset         @relation(fields: [assetId], references: [id])
+  alertDate       DateTime      @default(now())
+  isRead          Boolean       @default(false)
+  alertType       AlertType     @default(DueDate)
+  
+  @@index([scheduleId])
+  @@index([alertDate])
+  @@index([isRead])
+}
+
+enum AlertType {
+  DueDate      // Mendekati tanggal servis
+  Overdue      // Sudah melewati tanggal servis
+}
+
+// ============================================
+// MODUL 4: AUTHENTICATION
+// ============================================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique @db.VarChar(255)
+  name      String   @db.VarChar(255)
+  password  String   @db.VarChar(255) // Menyimpan hashed password
+  role      UserRole @default(Engineer)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([email])
+}
+
+enum UserRole {
+  Admin
+  Manager
+  Engineer
+}
