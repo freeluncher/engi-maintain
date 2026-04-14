@@ -14,6 +14,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 import Dashboard from './pages/Dashboard';
+import AssetDetail from './pages/AssetDetail';
 
 function App() {
   return (
@@ -25,6 +26,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/assets/:id" 
+          element={
+            <ProtectedRoute>
+              <AssetDetail />
             </ProtectedRoute>
           } 
         />

@@ -30,6 +30,9 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(morgan('dev'))
 
+import path from 'path'
+// Serve static upload elements
+app.use('/uploads', express.static(path.join(__dirname, '../../public/uploads')))
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -43,10 +46,13 @@ app.get('/health', (req, res) => {
 
 import authRoutes from './routes/auth.routes'
 import assetRoutes from './routes/asset.routes'
+import analyticsRoutes from './routes/analytics.routes'
 
 // Mount routes
 app.use('/api/v1/auth', authRoutes)
 app.use('/api/v1/assets', assetRoutes)
+app.use('/api/v1/analytics', analyticsRoutes)
+
 // Error handling middleware (contoh sederhana)
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   res.status(500).json({ message: 'Terjadi kesalahan server', detail: err.message, stack: err.stack })

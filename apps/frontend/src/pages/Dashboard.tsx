@@ -1,15 +1,32 @@
+import { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
+import { Link } from 'react-router-dom';
+import AssetFormModal from '../features/assets/AssetFormModal';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'];
 
 export default function Dashboard() {
   const { user, logout } = useAuthStore();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { data, isLoading, isError, error } = useQuery({
+  // Raw assets query for the table below
+  const { data: assetsData, isLoading: assetsLoading, isError: assetsError } = useQuery({
     queryKey: ['assets'],
     queryFn: async () => {
       const response: any = await apiClient.get('assets').json();
-      return response.data; // Since our express backend wraps array in { data: assets }
+      return response.data; 
+    },
+  });
+
+  // Analytics query for the insight charts
+  const { data: analyticsData } = useQuery({
+    queryKey: ['analytics_dashboard'],
+    queryFn: async () => {
+      const response: any = await apiClient.get('analytics/dashboard').json();
+      return response.data;
     },
   });
 
@@ -60,7 +77,10 @@ export default function Dashboard() {
         {/* Header */}
         <header className="bg-white border-b border-gray-100 flex items-center justify-between px-8 py-4">
           <h2 className="text-2xl font-bold text-gray-800 tracking-tight">Manajemen Aset</h2>
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-all shadow-sm shadow-blue-500/30 flex items-center active:scale-95">
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-all shadow-sm shadow-blue-500/30 flex items-center active:scale-95"
+          >
             <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
@@ -71,25 +91,54 @@ export default function Dashboard() {
         {/* Content Wrapper */}
         <div className="flex-1 overflow-auto p-8">
           
-          {/* Stats Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)]">
-              <p className="text-sm font-semibold text-gray-500">Total Infrastruktur</p>
-              <h3 className="text-3xl font-bold text-gray-900 mt-2">{data ? data.length : '-'}</h3>
+          {/* Analytics Overview Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            
+            {/* Left Metrics */}
+            <div className="lg:col-span-1 space-y-6">
+               <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] relative overflow-hidden h-36 flex flex-col justify-center">
+                 <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-blue-500"></div>
+                 <p className="text-sm font-semibold text-gray-500">Ketersediaan Mesin (Availability)</p>
+                 <div className="flex items-baseline mt-2">
+                   <h3 className="text-4xl font-black text-gray-900">{analyticsData?.availability?.rate || 0}%</h3>
+                   <span className="ml-2 text-sm text-gray-500 font-medium">dari {analyticsData?.availability?.total || 0} Aset</span>
+                 </div>
+               </div>
+               
+               <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] relative overflow-hidden h-36 flex flex-col justify-center">
+                 <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-red-400"></div>
+                 <p className="text-sm font-semibold text-gray-500">Downtime 30 Hari Terakhir</p>
+                 <div className="flex items-baseline mt-2">
+                   <h3 className="text-4xl font-black text-gray-900">{analyticsData?.downtime?.hours || 0}</h3>
+                   <span className="ml-2 text-sm text-gray-500 font-medium">Jam Total</span>
+                 </div>
+               </div>
             </div>
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] relative overflow-hidden">
-              <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-green-500"></div>
-              <p className="text-sm font-semibold text-gray-500">Aset Beroperasi</p>
-              <h3 className="text-3xl font-bold text-gray-900 mt-2">
-                {data ? data.filter((a: any) => a.status === 'Operational').length : '-'}
-              </h3>
-            </div>
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] relative overflow-hidden">
-               <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-amber-500"></div>
-              <p className="text-sm font-semibold text-gray-500">Sedang Perawatan</p>
-              <h3 className="text-3xl font-bold text-gray-900 mt-2">
-                {data ? data.filter((a: any) => a.status === 'UnderMaintenance').length : '-'}
-              </h3>
+
+            {/* Right Chart */}
+            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] lg:col-span-2 flex flex-col justify-center">
+               <h3 className="text-lg font-bold text-gray-800 mb-4">Distribusi Kategori Infrastruktur</h3>
+               <div className="w-full" style={{ minHeight: '256px' }}>
+                 <ResponsiveContainer width="100%" height={256}>
+                    <PieChart>
+                      <Pie
+                        data={analyticsData?.categoryDistribution || []}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={90}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {analyticsData?.categoryDistribution?.map((_entry: any, index: number) => (
+                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value: number) => [`${value} Aset`, 'Jumlah']} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                      <Legend verticalAlign="bottom" height={36}/>
+                    </PieChart>
+                 </ResponsiveContainer>
+               </div>
             </div>
           </div>
 
@@ -109,16 +158,16 @@ export default function Dashboard() {
             </div>
 
             <div className="overflow-x-auto">
-              {isLoading ? (
+              {assetsLoading ? (
                 <div className="flex justify-center items-center h-64">
                    <svg className="w-8 h-8 animate-spin text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                 </div>
-              ) : isError ? (
+              ) : assetsError ? (
                 <div className="flex justify-center items-center h-64 text-red-500 font-semibold bg-red-50/50 p-4">
-                  Gagal mendapatkan data aset. Info Error: {error instanceof Error ? error.message : String(error)}
+                  Gagal mendapatkan data aset. Info Error: {assetsError instanceof Error ? assetsError.message : String(assetsError)}
                 </div>
               ) : (
                 <table className="w-full text-left text-sm text-gray-600">
@@ -132,7 +181,7 @@ export default function Dashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {data?.map((asset: any) => (
+                    {assetsData?.map((asset: any) => (
                       <tr key={asset.id} className="hover:bg-blue-50/30 transition-colors group">
                         <td className="px-6 py-4">
                           <div className="font-bold text-gray-900 text-base">{asset.name}</div>
@@ -171,11 +220,13 @@ export default function Dashboard() {
                           )}
                         </td>
                         <td className="px-6 py-4 align-top pt-5">
-                          <button className="text-blue-600 hover:text-blue-800 font-bold text-sm mr-4 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100">Detail</button>
+                          <Link to={`/assets/${asset.id}`} className="text-blue-600 hover:text-blue-800 font-bold text-sm mr-4 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100">
+                            Detail
+                          </Link>
                         </td>
                       </tr>
                     ))}
-                    {(!data || data.length === 0) && (
+                    {(!assetsData || assetsData.length === 0) && (
                       <tr>
                         <td colSpan={5} className="px-6 py-16 text-center text-gray-500">
                           <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
@@ -194,9 +245,9 @@ export default function Dashboard() {
             </div>
             
              {/* Pagination (dummy footer) */}
-            {data && data.length > 0 && (
+            {assetsData && assetsData.length > 0 && (
               <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between text-sm text-gray-500">
-                 <div>Menampilkan <span className="font-semibold text-gray-900">{data.length}</span> infrastruktur</div>
+                 <div>Menampilkan <span className="font-semibold text-gray-900">{assetsData.length}</span> infrastruktur</div>
                  <div className="flex space-x-2">
                    <button className="px-3.5 py-1.5 border border-gray-200 rounded-lg hover:bg-white hover:text-gray-900 hover:shadow-sm transition-all disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:shadow-none" disabled>Sebelumnya</button>
                    <button className="px-3.5 py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm transition-all shadow-sm">Selanjutnya</button>
@@ -206,6 +257,9 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+
+      {/* Render Modal if state is open */}
+      {isModalOpen && <AssetFormModal onClose={() => setIsModalOpen(false)} />}
     </div>
   );
 }
