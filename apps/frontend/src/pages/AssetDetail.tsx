@@ -1,10 +1,15 @@
+import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
+import MaintenanceFormModal from '../features/maintenance/MaintenanceFormModal';
+import ScheduleFormModal from '../features/scheduler/ScheduleFormModal';
 
 export default function AssetDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
   const { data: asset, isLoading, isError } = useQuery({
     queryKey: ['asset', id],
@@ -55,7 +60,7 @@ export default function AssetDetail() {
               <h1 className="text-xl font-bold tracking-tight truncate">{asset.name}</h1>
             </div>
             <div className="flex items-center space-x-3">
-              <button className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg text-sm font-semibold flex items-center transition-colors shadow-sm shadow-red-500/20">
+              <button onClick={() => setIsMaintenanceModalOpen(true)} className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg text-sm font-semibold flex items-center transition-colors shadow-sm shadow-red-500/20">
                 <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                 Lapor Kerusakan
               </button>
@@ -195,7 +200,11 @@ export default function AssetDetail() {
                   <h3 className="font-bold text-gray-800">Aksi Administratif</h3>
                 </div>
                 <div className="p-4 flex flex-col gap-2">
-                  <button className="text-left px-4 py-2 rounded-lg hover:bg-gray-50 text-sm font-semibold text-gray-700 transition">Ubah Informasi Spesifikasi</button>
+                  <button onClick={() => setIsScheduleModalOpen(true)} className="text-left px-4 py-2 rounded-lg hover:bg-blue-50 hover:text-blue-700 text-sm font-semibold text-gray-700 transition flex items-center justify-between group">
+                     Jadwalkan PM Rutin 
+                     <svg className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                  </button>
+                  <button className="text-left px-4 py-2 rounded-lg hover:bg-gray-50 text-sm font-semibold text-gray-700 transition">Ubah Spesifikasi</button>
                   <button className="text-left px-4 py-2 rounded-lg hover:bg-red-50 text-sm font-semibold text-red-600 transition">Pensiunkan / Hapus Aset</button>
                 </div>
              </div>
@@ -204,6 +213,22 @@ export default function AssetDetail() {
 
         </div>
       </div>
+      
+      {isMaintenanceModalOpen && (
+        <MaintenanceFormModal 
+           assetId={asset.id} 
+           currentStatus={asset.status} 
+           onClose={() => setIsMaintenanceModalOpen(false)} 
+        />
+      )}
+
+      {isScheduleModalOpen && (
+        <ScheduleFormModal
+           assetId={asset.id}
+           onClose={() => setIsScheduleModalOpen(false)}
+        />
+      )}
+
     </div>
   );
 }

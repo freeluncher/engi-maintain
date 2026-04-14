@@ -24,4 +24,8 @@ router.delete('/:id', requireAuth, deleteAsset);
 import maintenanceRoutes from './maintenance.routes';
 router.use('/:assetId/maintenance', maintenanceRoutes);
 
+import { createSchedule, getAssetSchedules } from '../controllers/schedule.controller';
+router.post('/:assetId/schedules', requireAuth, createSchedule);
+router.get('/:assetId/schedules', requireAuth, getAssetSchedules);
+
 export default router;

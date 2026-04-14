@@ -31,8 +31,15 @@ app.use(express.urlencoded({ extended: true }))
 app.use(morgan('dev'))
 
 import path from 'path'
-// Serve static upload elements
-app.use('/uploads', express.static(path.join(__dirname, '../../public/uploads')))
+// Serve static upload elements using robust process.cwd() since we run out of backend root
+app.use('/uploads', express.static(path.join(process.cwd(), 'public/uploads'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.toLowerCase().endsWith('.pdf')) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${path.basename(filePath)}"`);
+    }
+  }
+}))
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -44,14 +51,17 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
+// Routes API
 import authRoutes from './routes/auth.routes'
 import assetRoutes from './routes/asset.routes'
 import analyticsRoutes from './routes/analytics.routes'
+import scheduleRoutes from './routes/schedule.routes'
 
 // Mount routes
 app.use('/api/v1/auth', authRoutes)
 app.use('/api/v1/assets', assetRoutes)
 app.use('/api/v1/analytics', analyticsRoutes)
+app.use('/api/v1/schedules', scheduleRoutes)
 
 // Error handling middleware (contoh sederhana)
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
