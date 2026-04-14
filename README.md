@@ -1,92 +1,92 @@
 # 🛠️ EngiMaintain
 
-**EngiMaintain** adalah sebuah platform modern berbasis arsitektur *monorepo* yang didesain secara spesifik untuk memanajemen aset infrastruktur dan penjadwalan pemeliharaan (Maintenance) harian, mingguan, maupun *preventive*. Platform ini membantu para *Engineer* dan *Manager* memiliki visibilitas penuh akan status operasional peralatan di lapangan.
+**EngiMaintain** is a modern platform built with a *monorepo* architecture specifically designed for managing infrastructure assets and daily, weekly, or *preventive* maintenance scheduling. This platform empowers *Engineers* and *Managers* with full visibility over the operational status of field equipment.
 
 ---
 
-## 🚀 Teknologi Utama
+## 🚀 Tech Stack
 
-Project ini menggunakan pendekatan Monorepo dengan pembagian jelas antara sistem antarmuka pengguna *(Frontend)* dan API database *(Backend)*.
+This project utilizes a Monorepo approach with a clear separation between the user interface system *(Frontend)* and the API database logic *(Backend)*.
 
 **Frontend:**
 - ⚛️ **React 19** via **Vite**
 - 🎨 **Tailwind CSS v4** (Modern styling pipeline via PostCSS)
-- 🛣️ **React Router v7** (Proteksi navigasi)
-- 🐻 **Zustand** (Manajemen state aplikasi super ringan)
-- 📝 **React Hook Form & Zod** (Validasi *form* standar industri)
-- 🔗 **TanStack Query (React Query)** (Manajemen siklus asinkronous)
+- 🛣️ **React Router v7** (Navigation protection & routing)
+- 🐻 **Zustand** (Lightweight global state management)
+- 📝 **React Hook Form & Zod** (Industry-standard form validation)
+- 🔗 **TanStack Query (React Query)** (Asynchronous lifecycle & data fetching)
 
 **Backend & Database:**
 - 🟢 **Node.js**
 - 🗄️ **PostgreSQL**
-- 🔰 **Prisma ORM** (Validasi dan relasi skema database tingkat lanjut, mendukung migrasi mulus)
+- 🔰 **Prisma ORM** (Advanced database schema validation and relations, supporting seamless migrations)
 
 ---
 
-## 📂 Struktur Monorepo
+## 📂 Monorepo Structure
 
-Project ini di-maintain menggunakan struktur folder tunggal, dimana sistem dipisahkan berdasarkan fungsi *apps*:
+The project is maintained using a single-directory structure, separating domains based on *apps*:
 
 ```text
 engi-maintain/
 ├── apps/
-│   ├── frontend/         # Aplikasi antarmuka pengguna (React + Vite)
-│   └── backend/          # Server API dan konfigurasi kontrol Database (Prisma)
-├── logs/                 # Folder output debugger jika ada
-├── package.json          # Konfigurasi workspace dependency root
-└── .gitignore            # Pencegahan file sensitif termuat ke repository
+│   ├── frontend/         # Core User Interface Application (React + Vite)
+│   └── backend/          # API server and Database controller setup (Prisma)
+├── logs/                 # Debugger output logs (if generated)
+├── package.json          # Root workspace dependency definitions
+└── .gitignore            # Excludes sensitive files from the repository
 ```
 
 ---
 
-## ⚙️ Prerequisites (Prasyarat Instalasi)
+## ⚙️ Prerequisites
 
-Sebelum Anda menjalankan project di mesin lokal, pastikan tools di bawah telah di-install:
-- [Node.js](https://nodejs.org/en/) (Disarankan `v18.x` atau lebih baru)
-- Paket manajer (secara bawaan, ekosistem menggunakan `npm`)
-- Database **PostgreSQL** yang menyala pada port 5432 (ataupun di-*hosting*)
+Before executing the project on your local machine, ensure the following environments are installed:
+- [Node.js](https://nodejs.org/en/) (Recommended `v18.x` or newer)
+- Native Package Manager (`npm` is natively integrated into the ecosystem)
+- A running **PostgreSQL** database on port 5432 (or a hosted instance URL)
 
 ---
 
-## 🏁 Memulai Development
+## 🏁 Getting Started
 
-Ikuti langkah-langkah di bawah ini untuk menyalakan proyek di server `localhost` komputer Anda.
+Follow the steps below to spin up the local development servers.
 
 ### 1. Install Dependencies
-Masuk ke root direktori terminal, install seluruh dependensi paket:
+Navigate to the root terminal directory and install the necessary package dependencies:
 ```bash
 npm install
 ```
 
-### 2. Setup Lingkungan Database (Backend)
-Platform ini me-utilisasi kekuatan Prisma. Siapkan file `.env` di direktori database dan pastikan ada `DATABASE_URL` yang valid ke PostgreSQL Anda.
+### 2. Backend Database Setup
+This platform utilizes the power of Prisma. Create an `.env` file within the backend directory and ensure it supplies a valid `DATABASE_URL` targeting your PostgreSQL instance.
 
-Sesudah itu, eksekusi relasi ke database via terminal:
+Afterward, execute the schema synchronization script via terminal:
 ```bash
 cd apps/backend
-npx prisma format       # Validasi syntax schema.prisma Anda
-npx prisma migrate dev  # Bangun infrastruktur tabel dan kolom ke database lokal
+npx prisma format       # Validates your schema.prisma syntax
+npx prisma migrate dev  # Builds tables and infrastructure inside your local DB
 ```
 
-### 3. Eksekusi Environment Lokal
-Aplikasi dapat dijalankan secara berdampingan. Jalankan command andalan dari target folder Anda:
+### 3. Running the Local Environment
+Both application environments can be executed concurrently. Run the primary development scripts from your target folder:
 ```bash
-# Menjalankan Vite server react di port default
+# Starts the Vite react server on the default port
 npm run dev
 ```
 
-*(Catatan: Anda juga bisa menulis command automasi di `package.json` yang spesifik me-*trigger* concurrent run antara backend API log dan Frontend)*
+*(Note: You're encouraged to define concurrent scripts within the root `package.json` to trigger both backend API and Frontend seamlessly later)*
 
 ---
 
-## ✨ Fitur-fitur Inti Terkini
-- **User Authentication:** Login antarmuka dengan kapabilitas validasi email presonalized per perusahaan & autentikasi tersimpan.
-- **Manajemen Modul Aset:** Katalogisasi data historis status aset, nomor seri, dan lokasi dari alat perusahaan.
-- **Maintenance Logger:** Mencatat spare part keluar serta lama downtime (Preventive maupun Corrective maintenance).
-- **Automation Scheduler Alerts:** Pengawasan mesin mana saja yang akan tiba masa kalibrasi atau perawatan berjenjang (*Overdue and Due Date Alerts*).
+## ✨ Core Features
+- **User Authentication:** Login interface equipped with industry-standard validation and secure local storage sessions.
+- **Asset Management Module:** Comprehensive cataloging of historical statuses, serial numbers, and locational tracing of corporate equipment.
+- **Maintenance Logger:** Keep track of utilized/replaced spare parts and machinery downtime metrics (addressing both Preventive and Corrective maintenance).
+- **Automation Scheduler Alerts:** Proactively monitor and receive insights on which machines are arriving at calibration periods (*Overdue and Due Date Alerts*).
 
 ---
 
 <p align="center">
-  <i>Dibangun dengan ❤️ untuk otomasi operasional para praktisi Engineer.</i>
+  <i>Built with ❤️ to automate the operational workflow of engineering practitioners.</i>
 </p>
