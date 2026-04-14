@@ -9,6 +9,7 @@ const app = express()
 // Middleware
 app.use(
   helmet({
+    crossOriginResourcePolicy: false,
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
@@ -40,12 +41,15 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
-// TODO: nanti tambahkan routes di sini
+import authRoutes from './routes/auth.routes'
+import assetRoutes from './routes/asset.routes'
 
+// Mount routes
+app.use('/api/v1/auth', authRoutes)
+app.use('/api/v1/assets', assetRoutes)
 // Error handling middleware (contoh sederhana)
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err)
-  res.status(500).json({ message: 'Terjadi kesalahan server' })
+  res.status(500).json({ message: 'Terjadi kesalahan server', detail: err.message, stack: err.stack })
 })
 
 export default app

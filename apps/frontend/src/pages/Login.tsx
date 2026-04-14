@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { apiClient } from '../api/client';
 
 // Skema validasi menggunakan Zod
 const loginSchema = z.object({
@@ -15,8 +16,9 @@ type LoginSchema = z.infer<typeof loginSchema>;
 
 export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
-  const setToken = useAuthStore((state) => state.setToken);
+  const setCredentials = useAuthStore((state) => state.setCredentials);
 
   const {
     register,
@@ -28,19 +30,22 @@ export default function Login() {
 
   const onSubmit = async (data: LoginSchema) => {
     setIsLoading(true);
+    setErrorMessage('');
     try {
-      // Simulasi API call dengan delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const response: any = await apiClient.post('auth/login', {
+        json: data,
+      }).json();
       
-      console.log('Login credentials:', data);
-      
-      // Simpan token ke store & localStorage
-      setToken('dummy_jwt_token_payload');
-      
-      // Redirect ke dashboard
+      setCredentials(response.token, response.user);
       navigate('/');
-    } catch (error) {
-      console.error('Login failed', error);
+    } catch (error: any) {
+      if (error.response) {
+        const errorData = await error.response.json().catch(() => ({}));
+        setErrorMessage(errorData.message || 'Gagal login, periksa email & password.');
+      } else {
+        setErrorMessage('Gagal terhubung dengan server backend.');
+      }
+      console.error('Login Error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -114,6 +119,12 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {errorMessage && (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+                <span className="font-semibold block mb-0.5">Autentikasi Gagal</span>
+                {errorMessage}
+              </div>
+            )}
             <div>
               <label
                 htmlFor="email"

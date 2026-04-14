@@ -1,3 +1,8 @@
+import * as dotenv from 'dotenv'
+import path from 'path'
+
+// Resolve explicit path because npm workspaces run from monorepo root CWD
+dotenv.config({ path: path.resolve(__dirname, '../../.env') })
 import { PrismaClient } from '../generated/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg' // Import the 'pg' pool
