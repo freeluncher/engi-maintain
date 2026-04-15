@@ -182,7 +182,7 @@ export default function AssetDetail() {
                        <div className="p-2 border border-gray-200 rounded-2xl bg-white shadow-sm mb-4">
                          <img src={asset.qrCode} alt={`QR Code ${asset.serialNumber}`} className="w-48 h-48 object-contain" />
                        </div>
-                       <p className="text-sm text-gray-500 mb-4 max-w-[200px]">Cetak QR Code ini dan tempel pada fisik aset untuk quick-scan.</p>
+                       <p className="text-sm text-gray-500 mb-4 max-w-50">Cetak QR Code ini dan tempel pada fisik aset untuk quick-scan.</p>
                        <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-50 transition w-full">Unduh QR Code</button>
                      </>
                    ) : (
