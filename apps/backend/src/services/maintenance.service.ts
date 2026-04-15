@@ -47,26 +47,51 @@ export const maintenanceService = {
     return maintenanceRepository.findByAssetId(assetId);
   },
 
+  getActiveMaintenance: async (assetId: string) => {
+    const logs = await maintenanceRepository.findByAssetId(assetId);
+    // Return the most recent log that is not "Operational" on the asset
+    const asset = await assetRepository.findById(assetId);
+    if (!asset) return null;
+    
+    if (asset.status === 'Breakdown' || asset.status === 'UnderMaintenance') {
+      // Find the most recent maintenance log that likely caused this status
+      return logs[0] || null;
+    }
+    return null;
+  },
+
   closeMaintenanceLog: async (
     logId: string,
-    body: { endTime?: string },
+    body: { endTime?: string; newAssetStatus?: string },
   ) => {
     const log = await maintenanceRepository.findById(logId);
     if (!log) {
       throw new NotFoundError('Log maintenance tidak ditemukan');
     }
 
-    if (log.maintenanceDate && body.endTime) {
+    const now = new Date();
+    let totalDowntime = log.downtimeHours || 0;
+
+    // Calculate downtime if start time exists
+    if (log.maintenanceDate) {
       const start = new Date(log.maintenanceDate);
-      const end = new Date(body.endTime);
+      const end = body.endTime ? new Date(body.endTime) : now;
       const diffHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-      
-      const existingHours = log.downtimeHours || 0;
-      const totalDowntime = existingHours + diffHours;
-      
-      return maintenanceRepository.update(logId, { downtimeHours: totalDowntime });
+      totalDowntime = diffHours > 0 ? diffHours : 0;
     }
 
-    return log;
+    // Update the log
+    const updatedLog = await maintenanceRepository.update(logId, { 
+      downtimeHours: totalDowntime 
+    });
+
+    // Update asset status if provided
+    if (body.newAssetStatus) {
+      await assetRepository.update(log.assetId, { 
+        status: body.newAssetStatus as any 
+      });
+    }
+
+    return updatedLog;
   },
 };

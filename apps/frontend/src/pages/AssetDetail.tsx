@@ -21,6 +21,8 @@ import {
   Loader2,
   Pencil,
   Trash2,
+  CheckCircle,
+  Wrench,
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
@@ -76,6 +78,25 @@ export default function AssetDetail() {
       queryClient.invalidateQueries({ queryKey: ['asset', id] });
     },
   });
+
+  const closeMaintenanceMutation = useMutation({
+    mutationFn: async (logId: string) => {
+      const response: any = await apiClient.patch(`assets/${id}/maintenance/${logId}/close`, {
+        json: { newAssetStatus: 'Operational' }
+      }).json();
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['asset', id] });
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+    },
+  });
+
+  // Get active maintenance (most recent log when asset is not Operational)
+  const activeMaintenance = asset?.maintenanceLogs?.[0] && 
+    (asset.status === 'Breakdown' || asset.status === 'UnderMaintenance') 
+    ? asset.maintenanceLogs[0] 
+    : null;
 
   const handleDownloadQr = () => {
     if (!asset?.qrCode) return;
@@ -241,25 +262,36 @@ export default function AssetDetail() {
               <div className="p-5">
                 {asset.maintenanceLogs && asset.maintenanceLogs.length > 0 ? (
                   <div className="relative border-l-2 border-gray-200 ml-3 space-y-7">
-                    {asset.maintenanceLogs.map((log: any) => (
-                      <div key={log.id} className="relative pl-6">
-                        <span className={`absolute -left-1.5 top-1 w-3 h-3 rounded-full border-2 border-white ${log.type === 'Corrective' ? 'bg-red-500' : 'bg-blue-500'}`} />
-                        <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <p className="text-sm font-bold text-gray-900">
-                            {log.type === 'Corrective' ? '🔧 Perbaikan Breakdown' : '✅ Perawatan Rutin'}
+                    {asset.maintenanceLogs.map((log: any, index: number) => {
+                      const isActive = index === 0 && (asset.status === 'Breakdown' || asset.status === 'UnderMaintenance');
+                      return (
+                        <div key={log.id} className={`relative pl-6 ${isActive ? 'bg-red-50 -mx-4 px-4 py-3 rounded-xl border border-red-200' : ''}`}>
+                          <span className={`absolute -left-1.5 top-1 w-3 h-3 rounded-full border-2 border-white ${log.type === 'Corrective' ? 'bg-red-500 animate-pulse' : 'bg-blue-500'}`} />
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <p className="text-sm font-bold text-gray-900">
+                              {log.type === 'Corrective' ? '🔧 Perbaikan Breakdown' : '✅ Perawatan Rutin'}
+                              {isActive && <span className="ml-2 text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full">AKTIF</span>}
+                            </p>
+                          </div>
+                          <p className="text-xs text-gray-500 mb-1.5">
+                            {new Date(log.maintenanceDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            {' • '}Teknisi: <span className="font-semibold">{log.technicianName}</span>
+                            {log.downtimeHours ? ` • Downtime: ${log.downtimeHours.toFixed(1)} jam` : ''}
                           </p>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${log.type === 'Corrective' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
-                            {log.type}
-                          </span>
+                          <p className="text-sm text-gray-700">{log.description}</p>
+                          {isActive && role === 'Engineer' && (
+                            <button
+                              onClick={() => closeMaintenanceMutation.mutate(log.id)}
+                              disabled={closeMaintenanceMutation.isPending}
+                              className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl text-sm font-semibold transition active:scale-95 disabled:opacity-50"
+                            >
+                              {closeMaintenanceMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+                              Selesai Perbaikan
+                            </button>
+                          )}
                         </div>
-                        <p className="text-xs text-gray-500 mb-1.5">
-                          {new Date(log.maintenanceDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                          {' • '}Teknisi: <span className="font-semibold">{log.technicianName}</span>
-                          {log.downtimeHours ? ` • Downtime: ${log.downtimeHours} jam` : ''}
-                        </p>
-                        <p className="text-sm text-gray-700">{log.description}</p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-10 text-gray-400">
