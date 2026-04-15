@@ -8,6 +8,7 @@ import Assets from './pages/Assets';
 import AdminPanel from './pages/admin/AdminPanel';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminSpareParts from './pages/admin/AdminSpareParts';
+import AdminCategories from './pages/admin/AdminCategories';
 import ManagerReports from './pages/manager/ManagerReports';
 
 import { useAuthStore } from './store/authStore';
@@ -106,6 +107,16 @@ function App() {
               <ProtectedRoute>
                 <RoleGuard allowedRoles={['Admin']}>
                   <AdminSpareParts />
+                </RoleGuard>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/categories"
+            element={
+              <ProtectedRoute>
+                <RoleGuard allowedRoles={['Admin']}>
+                  <AdminCategories />
                 </RoleGuard>
               </ProtectedRoute>
             }

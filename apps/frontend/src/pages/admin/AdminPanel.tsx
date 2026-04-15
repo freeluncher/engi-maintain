@@ -1,12 +1,33 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Users, Package, Wrench, ChevronRight, ShieldCheck } from 'lucide-react';
+import { Users, Package, Wrench, ChevronRight, ShieldCheck, Search } from 'lucide-react';
 import { usersApi } from '../../api/users';
 import { sparePartsApi } from '../../api/spareParts';
+import { apiClient } from '../../api/client';
+import { useState, useMemo } from 'react';
+import type { Asset } from '../../types/asset';
 
 export default function AdminPanel() {
   const { data: users } = useQuery({ queryKey: ['users'], queryFn: usersApi.getAll });
   const { data: spareParts } = useQuery({ queryKey: ['spare-parts'], queryFn: sparePartsApi.getAll });
+  const { data: assets } = useQuery({ queryKey: ['assets'], queryFn: async () => {
+    const response = await apiClient.get('assets').json();
+    return response.data as Asset[];
+  }});
+
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim() || !assets) return [];
+    const query = searchQuery.toLowerCase();
+    return assets.filter((a: Asset) =>
+      a.name.toLowerCase().includes(query) ||
+      a.serialNumber?.toLowerCase().includes(query) ||
+      a.category?.toLowerCase().includes(query) ||
+      a.location?.toLowerCase().includes(query) ||
+      a.brand?.toLowerCase().includes(query)
+    ).slice(0, 5);
+  }, [assets, searchQuery]);
 
   const cards = [
     {
@@ -63,6 +84,69 @@ export default function AdminPanel() {
               <p className="text-xs text-gray-500 mt-1 font-medium">{stat.label}</p>
             </div>
           ))}
+        </div>
+
+        {/* Search Infrastructure */}
+        <div className="bg-white rounded-xl border border-gray-100 p-4 mb-8 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <Search size={16} className="text-blue-500" />
+            <h3 className="text-sm font-bold text-gray-800">Pencarian Infrastruktur</h3>
+          </div>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Cari nama, SN, kategori, atau lokasi..."
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          </div>
+          
+          {searchQuery && (
+            <div className="mt-3 border-t border-gray-100 pt-3">
+              {searchResults.length > 0 ? (
+                <div className="space-y-2">
+                  {searchResults.map((asset: Asset) => (
+                    <Link
+                      key={asset.id}
+                      to={`/assets/${asset.id}`}
+                      className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                      onClick={() => setSearchQuery('')}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800 truncate">{asset.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {asset.serialNumber} • {asset.category}
+                        </p>
+                      </div>
+                      <span className={`text-[10px] font-semibold px-2 py-1 rounded-full ${
+                        asset.status === 'Operational' ? 'bg-green-100 text-green-700' :
+                        asset.status === 'UnderMaintenance' ? 'bg-amber-100 text-amber-700' :
+                        asset.status === 'Breakdown' ? 'bg-red-100 text-red-700' :
+                        'bg-gray-100 text-gray-600'
+                      }`}>
+                        {asset.status === 'Operational' ? 'Aktif' :
+                         asset.status === 'UnderMaintenance' ? 'Maintenance' :
+                         asset.status === 'Breakdown' ? 'Rusak' : 'Pensiun'}
+                      </span>
+                    </Link>
+                  ))}
+                  {assets && assets.length > 5 && (
+                    <Link
+                      to="/assets"
+                      className="block text-center text-sm text-blue-600 font-semibold pt-2 hover:text-blue-700"
+                      onClick={() => setSearchQuery('')}
+                    >
+                      Lihat semua ({assets.length}) →
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-2">Tidak ada hasil</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Navigation Cards */}

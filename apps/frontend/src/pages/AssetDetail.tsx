@@ -5,6 +5,7 @@ import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 import MaintenanceFormModal from '../features/maintenance/MaintenanceFormModal';
 import ScheduleFormModal from '../features/scheduler/ScheduleFormModal';
+import PMExecutionModal from '../features/scheduler/PMExecutionModal';
 import {
   ArrowLeft,
   AlertTriangle,
@@ -36,6 +37,7 @@ export default function AssetDetail() {
 
   const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [executingSchedule, setExecutingSchedule] = useState<{ id: string; title: string } | null>(null);
 
   const { data: asset, isLoading, isError } = useQuery({
     queryKey: ['asset', id],
@@ -43,6 +45,24 @@ export default function AssetDetail() {
       const response: any = await apiClient.get(`assets/${id}`).json();
       return response.data;
     },
+  });
+
+  const { data: schedules } = useQuery({
+    queryKey: ['asset', id, 'schedules'],
+    queryFn: async () => {
+      const response: any = await apiClient.get(`assets/${id}/schedules`).json();
+      return response.data || [];
+    },
+    enabled: role === 'Engineer' || role === 'Admin',
+  });
+
+  const upcomingSchedule = schedules?.find((s: any) => {
+    const due = new Date(s.nextDueDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    return due <= nextWeek && !s.lastExecutedAt;
   });
 
   const queryClient = useQueryClient();
@@ -319,17 +339,34 @@ export default function AssetDetail() {
 
             {/* Engineer-only quick action */}
             {role === 'Engineer' && (
-              <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
-                <p className="text-xs font-bold text-red-600 uppercase tracking-wider mb-2">Laporan Cepat</p>
-                <p className="text-sm text-red-700 mb-3">
-                  Temukan kerusakan? Laporkan sekarang agar tim dapat segera ditindaklanjuti.
-                </p>
-                <button
-                  onClick={() => setIsMaintenanceModalOpen(true)}
-                  className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-sm font-bold transition active:scale-95"
-                >
-                  <AlertTriangle size={15} /> Lapor Kerusakan
-                </button>
+              <div className="space-y-3">
+                {upcomingSchedule && (
+                  <div className="bg-green-50 border border-green-100 rounded-2xl p-4">
+                    <p className="text-xs font-bold text-green-600 uppercase tracking-wider mb-2">PM Tersedia</p>
+                    <p className="text-sm text-green-700 mb-2">{upcomingSchedule.title}</p>
+                    <p className="text-xs text-gray-500 mb-3">
+                      Jatuh tempo: {new Date(upcomingSchedule.nextDueDate).toLocaleDateString('id-ID')}
+                    </p>
+                    <button
+                      onClick={() => setExecutingSchedule({ id: upcomingSchedule.id, title: upcomingSchedule.title })}
+                      className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl text-sm font-bold transition active:scale-95"
+                    >
+                      <CalendarPlus size={15} /> Eksekusi PM
+                    </button>
+                  </div>
+                )}
+                <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
+                  <p className="text-xs font-bold text-red-600 uppercase tracking-wider mb-2">Laporan Cepat</p>
+                  <p className="text-sm text-red-700 mb-3">
+                    Temukan kerusakan? Laporkan sekarang agar tim dapat segera ditindaklanjuti.
+                  </p>
+                  <button
+                    onClick={() => setIsMaintenanceModalOpen(true)}
+                    className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-sm font-bold transition active:scale-95"
+                  >
+                    <AlertTriangle size={15} /> Lapor Kerusakan
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -348,6 +385,15 @@ export default function AssetDetail() {
         <ScheduleFormModal
           assetId={asset.id}
           onClose={() => setIsScheduleModalOpen(false)}
+        />
+      )}
+
+      {executingSchedule && (
+        <PMExecutionModal
+          assetId={asset.id}
+          scheduleId={executingSchedule.id}
+          scheduleTitle={executingSchedule.title}
+          onClose={() => setExecutingSchedule(null)}
         />
       )}
     </div>

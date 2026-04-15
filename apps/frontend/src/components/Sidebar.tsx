@@ -13,6 +13,7 @@ import {
   X,
   ShieldCheck,
   ChevronRight,
+  Cpu,
 } from 'lucide-react';
 
 interface NavItem {
@@ -62,6 +63,12 @@ const ADMIN_ITEMS: NavItem[] = [
     label: 'Library Spare Parts',
     to: '/admin/spare-parts',
     icon: <Package size={20} />,
+    roles: ['Admin'],
+  },
+  {
+    label: 'Master Kategori',
+    to: '/admin/categories',
+    icon: <Cpu size={20} />,
     roles: ['Admin'],
   },
 ];

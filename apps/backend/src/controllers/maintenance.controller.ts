@@ -27,3 +27,18 @@ export const getMaintenanceHistory = async (req: Request, res: Response): Promis
     res.status(500).json({ message: 'Sistem gagal memuat histori perbaikan.' });
   }
 };
+
+export const closeMaintenanceLog = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const logId = req.params['logId'] as string;
+    const result = await maintenanceService.closeMaintenanceLog(logId, req.body);
+    res.json({ message: 'Maintenance log ditutup', data: result });
+  } catch (error) {
+    if (error instanceof AppError) {
+      res.status(error.statusCode).json({ message: error.message });
+      return;
+    }
+    console.error('Close Maintenance Log Error:', error);
+    res.status(500).json({ message: 'Sistem gagal menutup log maintenance.' });
+  }
+};

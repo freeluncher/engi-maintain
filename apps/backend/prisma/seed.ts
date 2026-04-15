@@ -13,6 +13,27 @@ async function main() {
   await prisma.sparePart.deleteMany();
   await prisma.asset.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.category.deleteMany();
+
+  // ============================================
+  // 2. Seeding Categories (Master Data)
+  // ============================================
+  const categories = [
+    { name: 'Mechanical', description: 'Mesin berbasis komponen mekanik' },
+    { name: 'Electrical', description: 'Sistem kelistrikan dan motor' },
+    { name: 'Pneumatic', description: 'Sistem udara terkompresi' },
+    { name: 'Hydraulic', description: 'Sistem oli hidrolik' },
+    { name: 'HVAC', description: 'Heating, Ventilation, AC' },
+    { name: 'CNC', description: 'Computer Numerical Control' },
+    { name: 'Boiler', description: 'Mesin penghasil uap' },
+    { name: 'IT Infrastructure', description: 'Server dan jaringan' },
+    { name: 'Others', description: 'Kategori lainnya' },
+  ];
+
+  for (const cat of categories) {
+    await prisma.category.create({ data: cat });
+  }
+  console.log('✅ Categories berhasil di-seeding.');
 
   // ============================================
   // 2. Seeding Users (Admin, Manager, Engineer)

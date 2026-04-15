@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 import AssetFormModal from '../features/assets/AssetFormModal';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Link } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, Search, Filter } from 'lucide-react';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'];
 
 export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
   const user = useAuthStore((s) => s.user);
   const role = user?.role || '';
 
@@ -40,6 +42,32 @@ export default function Dashboard() {
       return response.data;
     },
   });
+
+  // Filter assets based on search and status
+  const filteredAssets = useMemo(() => {
+    if (!assetsData) return [];
+    let result = assetsData;
+    if (search) {
+      const query = search.toLowerCase();
+      result = result.filter((a: any) =>
+        a.name.toLowerCase().includes(query) ||
+        a.serialNumber?.toLowerCase().includes(query) ||
+        a.category?.toLowerCase().includes(query) ||
+        a.location?.toLowerCase().includes(query) ||
+        a.brand?.toLowerCase().includes(query)
+      );
+    }
+    if (filterStatus) {
+      result = result.filter((a: any) => a.status === filterStatus);
+    }
+    return result;
+  }, [assetsData, search, filterStatus]);
+
+  // Get unique statuses
+  const statusOptions = useMemo(() => {
+    if (!assetsData) return [];
+    return Array.from(new Set(assetsData.map((a: any) => a.status)));
+  }, [assetsData]);
 
   return (
     <>
@@ -118,13 +146,33 @@ export default function Dashboard() {
 
           {/* Assets Table */}
           <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] overflow-hidden flex flex-col">
-            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 gap-4 flex-wrap">
               <h3 className="text-lg font-bold text-gray-800">Daftar Infrastruktur</h3>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                </span>
-                <input type="text" placeholder="Cari mesin..." className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow w-64" />
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Cari mesin..."
+                    className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow w-48"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+                <select
+                  className="border border-gray-200 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                >
+                  <option value="">Semua Status</option>
+                  {statusOptions.map((status: string) => (
+                    <option key={status} value={status}>
+                      {status === 'Operational' ? 'Beroperasi' :
+                       status === 'UnderMaintenance' ? 'Perawatan' :
+                       status === 'Breakdown' ? 'Rusak' : 'Pensiun'}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -151,8 +199,8 @@ export default function Dashboard() {
                       <th className="px-6 py-4 rounded-tr-lg">Aksi</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {assetsData?.map((asset: any) => (
+<tbody className="divide-y divide-gray-100">
+                      {filteredAssets.map((asset: any) => (
                       <tr key={asset.id} className="hover:bg-blue-50/30 transition-colors group">
                         <td className="px-6 py-4">
                           <div className="font-bold text-gray-900 text-base">{asset.name}</div>
@@ -201,16 +249,18 @@ export default function Dashboard() {
                         </td>
                       </tr>
                     ))}
-                    {(!assetsData || assetsData.length === 0) && (
+                    {(!filteredAssets || filteredAssets.length === 0) && (
                       <tr>
                         <td colSpan={5} className="px-6 py-16 text-center text-gray-500">
                           <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                            <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                            </svg>
+                            <Search className="w-8 h-8 text-gray-400" />
                           </div>
-                          <p className="font-medium text-gray-800">Tidak ada data aset</p>
-                          <p className="mt-1 text-sm">Tambahkan aset pertama Anda untuk mulai mengelola.</p>
+                          <p className="font-medium text-gray-800">
+                            {search || filterStatus ? 'Tidak ada hasil pencarian' : 'Tidak ada data aset'}
+                          </p>
+                          <p className="mt-1 text-sm">
+                            {search || filterStatus ? 'Coba kata kunci lain atau filter berbeda' : 'Tambahkan aset pertama Anda untuk mulai mengelola.'}
+                          </p>
                         </td>
                       </tr>
                     )}
@@ -220,9 +270,12 @@ export default function Dashboard() {
             </div>
 
             {/* Pagination (dummy footer) */}
-            {assetsData && assetsData.length > 0 && (
+            {filteredAssets && filteredAssets.length > 0 && (
               <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between text-sm text-gray-500">
-                <div>Menampilkan <span className="font-semibold text-gray-900">{assetsData.length}</span> infrastruktur</div>
+                <div>
+                  Menampilkan <span className="font-semibold text-gray-900">{filteredAssets.length}</span> infrastruktur
+                  {(search || filterStatus) && <span className="text-xs ml-1">(dari {assetsData?.length || 0} total)</span>}
+                </div>
                 <div className="flex space-x-2">
                   <button className="px-3.5 py-1.5 border border-gray-200 rounded-lg hover:bg-white hover:text-gray-900 hover:shadow-sm transition-all disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:shadow-none" disabled>Sebelumnya</button>
                   <button className="px-3.5 py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm transition-all shadow-sm">Selanjutnya</button>

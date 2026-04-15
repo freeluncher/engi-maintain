@@ -58,6 +58,7 @@ import analyticsRoutes from './routes/analytics.routes'
 import scheduleRoutes from './routes/schedule.routes'
 import userRoutes from './routes/user.routes'
 import sparePartRoutes from './routes/sparePart.routes'
+import categoryRoutes from './routes/category.routes'
 
 // Mount routes
 app.use('/api/v1/auth', authRoutes)
@@ -66,6 +67,7 @@ app.use('/api/v1/analytics', analyticsRoutes)
 app.use('/api/v1/schedules', scheduleRoutes)
 app.use('/api/v1/users', userRoutes)
 app.use('/api/v1/spare-parts', sparePartRoutes)
+app.use('/api/v1/categories', categoryRoutes)
 
 // Global error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

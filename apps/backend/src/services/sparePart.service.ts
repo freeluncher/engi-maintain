@@ -71,4 +71,24 @@ export const sparePartService = {
     if (!part) throw new NotFoundError('Spare part tidak ditemukan.');
     return sparePartRepository.delete(id);
   },
+
+  consumeSpareParts: async (
+    consumptions: Array<{ sparePartId: string; quantityUsed: number }>
+  ) => {
+    const results = [];
+    for (const item of consumptions) {
+      const part = await sparePartRepository.findById(item.sparePartId);
+      if (!part) {
+        throw new NotFoundError(`Spare part tidak ditemukan: ${item.sparePartId}`);
+      }
+      if (part.stockQuantity < item.quantityUsed) {
+        throw new ConflictError(`Stok tidak mencukupi untuk ${part.name}. Stok tersedia: ${part.stockQuantity}`);
+      }
+      const newStock = part.stockQuantity - item.quantityUsed;
+      results.push(
+        await sparePartRepository.update(item.sparePartId, { stockQuantity: newStock })
+      );
+    }
+    return results;
+  },
 };
