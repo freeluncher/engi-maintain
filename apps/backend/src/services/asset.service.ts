@@ -70,6 +70,21 @@ export const assetService = {
     return assetRepository.updateQrCode(newAsset.id, qrCodeDataUrl);
   },
 
+  regenerateQrCode: async (id: string) => {
+    const asset = await assetRepository.findById(id);
+    if (!asset) {
+      throw new NotFoundError('Aset tidak ditemukan');
+    }
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const actionUrl = `${frontendUrl}/assets/${asset.id}`;
+    const qrCodeDataUrl = await QRCode.toDataURL(actionUrl, {
+      width: 300,
+      margin: 2,
+      color: { dark: '#000000', light: '#ffffff' },
+    });
+    return assetRepository.updateQrCode(id, qrCodeDataUrl);
+  },
+
   updateAsset: async (
     id: string,
     body: {

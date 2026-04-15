@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 import MaintenanceFormModal from '../features/maintenance/MaintenanceFormModal';
@@ -42,6 +42,18 @@ export default function AssetDetail() {
     queryFn: async () => {
       const response: any = await apiClient.get(`assets/${id}`).json();
       return response.data;
+    },
+  });
+
+  const queryClient = useQueryClient();
+
+  const regenerateQrMutation = useMutation({
+    mutationFn: async () => {
+      const response: any = await apiClient.post(`assets/${id}/regenerate-qr`).json();
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['asset', id] });
     },
   });
 
@@ -248,7 +260,7 @@ export default function AssetDetail() {
                 <h3 className="font-bold text-gray-800 text-sm">QR Code Identitas</h3>
               </div>
               <div className="p-5 flex flex-col items-center">
-                {asset.qrCode ? (
+                {asset.qrCode && asset.qrCode.startsWith('data:') ? (
                   <>
                     <div className="p-2 border border-gray-200 rounded-xl bg-white shadow-sm mb-3">
                       <img src={asset.qrCode} alt={`QR ${asset.serialNumber}`} className="w-44 h-44 object-contain" />
@@ -262,7 +274,19 @@ export default function AssetDetail() {
                     </button>
                   </>
                 ) : (
-                  <div className="py-8 text-gray-400 text-sm">QR Code belum digenerate.</div>
+                  <div className="py-4 text-gray-400 text-sm">
+                    <p className="mb-3">QR Code belum digenerate.</p>
+                    {role === 'Admin' && (
+                      <button
+                        onClick={() => regenerateQrMutation.mutate()}
+                        disabled={regenerateQrMutation.isPending}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+                      >
+                        {regenerateQrMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <QrCode size={14} />}
+                        Generate QR Code
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -280,7 +304,10 @@ export default function AssetDetail() {
                   >
                     <CalendarPlus size={15} className="text-blue-500" /> Jadwalkan PM Rutin
                   </button>
-                  <button className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition text-left">
+                  <button
+                    onClick={() => navigate(`/assets/${asset.id}/edit`)}
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition text-left"
+                  >
                     <Pencil size={15} className="text-gray-400" /> Edit Spesifikasi Aset
                   </button>
                   <button className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 transition text-left">

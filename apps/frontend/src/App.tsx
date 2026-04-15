@@ -3,6 +3,7 @@ import Login from './pages/Login';
 import MainLayout from './layouts/MainLayout';
 import Dashboard from './pages/Dashboard';
 import AssetDetail from './pages/AssetDetail';
+import AssetEdit from './pages/AssetEdit';
 import Assets from './pages/Assets';
 import AdminPanel from './pages/admin/AdminPanel';
 import AdminUsers from './pages/admin/AdminUsers';
@@ -64,6 +65,16 @@ function App() {
             element={
               <ProtectedRoute>
                 <AssetDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/assets/:id/edit"
+            element={
+              <ProtectedRoute>
+                <RoleGuard allowedRoles={['Admin']}>
+                  <AssetEdit />
+                </RoleGuard>
               </ProtectedRoute>
             }
           />

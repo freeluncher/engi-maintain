@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getAllAssets, getAssetById, createAsset, updateAsset, deleteAsset } from '../controllers/asset.controller';
+import { getAllAssets, getAssetById, createAsset, updateAsset, deleteAsset, regenerateQrCode } from '../controllers/asset.controller';
 import { createSchedule, getAssetSchedules } from '../controllers/schedule.controller';
 import { requireAuth, requireRole } from '../middleware/auth.middleware';
 import { uploadMiddleware } from '../middleware/upload.middleware';
@@ -21,6 +21,9 @@ router.get('/:id', requireAuth, getAssetById);
 router.post('/', requireAuth, requireRole('Admin'), assetUploads, createAsset);
 router.put('/:id', requireAuth, requireRole('Admin'), assetUploads, updateAsset);
 router.delete('/:id', requireAuth, requireRole('Admin'), deleteAsset);
+
+// Regenerate QR Code - Admin only
+router.post('/:id/regenerate-qr', requireAuth, requireRole('Admin'), regenerateQrCode);
 
 // Nested maintenance logs — Engineer bisa create, semua bisa read
 router.use('/:assetId/maintenance', maintenanceRoutes);

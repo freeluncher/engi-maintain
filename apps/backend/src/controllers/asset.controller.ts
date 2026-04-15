@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { assetService } from '../services/asset.service';
+import QRCode from 'qrcode';
 import { AppError } from '../utils/errors';
 
 export const getAllAssets = async (req: Request, res: Response): Promise<void> => {
@@ -67,5 +68,19 @@ export const deleteAsset = async (req: Request, res: Response): Promise<void> =>
     }
     console.error('Delete Asset Error:', error);
     res.status(500).json({ message: 'Sistem gagal menghapus aset.' });
+  }
+};
+
+export const regenerateQrCode = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const asset = await assetService.regenerateQrCode(req.params['id'] as string);
+    res.json({ message: 'QR Code berhasil digenerate ulang', data: asset });
+  } catch (error) {
+    if (error instanceof AppError) {
+      res.status(error.statusCode).json({ message: error.message });
+      return;
+    }
+    console.error('Regenerate QR Code Error:', error);
+    res.status(500).json({ message: 'Sistem gagal generate QR Code.' });
   }
 };
