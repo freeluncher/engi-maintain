@@ -2,8 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
 import { Link } from 'react-router-dom';
 import { useState, useMemo } from 'react';
-import { ArrowUpDown, ArrowDownUp } from 'lucide-react';
+import { ArrowUpDown, ArrowDownUp, Plus } from 'lucide-react';
 import type { Asset, AssetsApiResponse } from '../types/asset';
+import { useAuthStore } from '../store/authStore';
 
 export default function Assets() {
   const { data: assetsData, isLoading, isError } = useQuery({
@@ -13,6 +14,9 @@ export default function Assets() {
       return response.data;
     },
   });
+
+  const user = useAuthStore((s) => s.user);
+  const role = user?.role || '';
 
   // State for search, sort, and filter
   const [search, setSearch] = useState('');
@@ -55,13 +59,13 @@ export default function Assets() {
 
   return (
       <main className="flex-1 flex flex-col overflow-hidden">
-                <header className="bg-white border-b border-gray-100 flex flex-col md:flex-row md:items-center md:justify-between px-8 py-4 gap-4">
-          <h2 className="text-2xl font-bold text-gray-800 tracking-tight">Daftar Aset</h2>
+                <header className="bg-white border-b border-gray-100 flex flex-col md:flex-row md:items-center md:justify-between px-4 md:px-8 py-4 gap-3">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-800 tracking-tight">Daftar Aset</h2>
           <div className="flex flex-wrap gap-2 items-center">
             <input
               type="text"
               placeholder="Cari aset..."
-              className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow w-48"
+              className="pl-3 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow flex-1 min-w-0 md:w-48 md:flex-none"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -92,6 +96,15 @@ export default function Assets() {
             >
               {sortOrder === 'asc' ? <ArrowUpDown size={18} /> : <ArrowDownUp size={18} />}
             </button>
+            {/* Admin only: add button */}
+            {role === 'Admin' && (
+              <Link
+                to="/admin"
+                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all active:scale-95"
+              >
+                <Plus size={15} /> Tambah Aset
+              </Link>
+            )}
           </div>
         </header>
         <div className="flex-1 overflow-auto p-8">

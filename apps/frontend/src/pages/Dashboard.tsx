@@ -1,14 +1,18 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
+import { useAuthStore } from '../store/authStore';
 import AssetFormModal from '../features/assets/AssetFormModal';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Link } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'];
 
 export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const user = useAuthStore((s) => s.user);
+  const role = user?.role || '';
 
   // Raw assets query for the table below
   const { data: assetsData, isLoading: assetsLoading, isError: assetsError } = useQuery({
@@ -41,16 +45,19 @@ export default function Dashboard() {
     <>
       {/* Header */}
       <header className="bg-white border-b border-gray-100 flex items-center justify-between px-8 py-4">
-        <h2 className="text-2xl font-bold text-gray-800 tracking-tight">Manajemen Aset & Reminder</h2>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-all shadow-sm shadow-blue-500/30 flex items-center active:scale-95"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          Tambah Aset Baru
-        </button>
+        <div>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-800 tracking-tight">Dashboard</h2>
+          <p className="text-xs text-gray-500 mt-0.5 hidden md:block">Selamat datang kembali, {user?.name}</p>
+        </div>
+        {role === 'Admin' && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 md:px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm shadow-blue-500/30 active:scale-95"
+          >
+            <Plus size={16} />
+            <span className="hidden sm:inline">Tambah Aset</span>
+          </button>
+        )}
       </header>
 
       {/* Content Wrapper */}

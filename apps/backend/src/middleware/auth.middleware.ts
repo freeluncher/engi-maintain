@@ -26,3 +26,19 @@ export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction)
     res.status(401).json({ message: 'Sesi anda telah berakhir atau token tidak valid' });
   }
 };
+
+/**
+ * Middleware RBAC: Hanya izinkan request dari role yang tercantum.
+ * Harus digunakan SETELAH requireAuth.
+ * @example router.post('/users', requireAuth, requireRole('Admin'), createUser)
+ */
+export const requireRole = (...roles: string[]) =>
+  (req: AuthRequest, res: Response, next: NextFunction): void => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      res.status(403).json({ 
+        message: `Akses ditolak: Hanya ${roles.join(' / ')} yang diizinkan untuk aksi ini.` 
+      });
+      return;
+    }
+    next();
+  };

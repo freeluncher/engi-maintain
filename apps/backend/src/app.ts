@@ -56,16 +56,22 @@ import authRoutes from './routes/auth.routes'
 import assetRoutes from './routes/asset.routes'
 import analyticsRoutes from './routes/analytics.routes'
 import scheduleRoutes from './routes/schedule.routes'
+import userRoutes from './routes/user.routes'
+import sparePartRoutes from './routes/sparePart.routes'
 
 // Mount routes
 app.use('/api/v1/auth', authRoutes)
 app.use('/api/v1/assets', assetRoutes)
 app.use('/api/v1/analytics', analyticsRoutes)
 app.use('/api/v1/schedules', scheduleRoutes)
+app.use('/api/v1/users', userRoutes)
+app.use('/api/v1/spare-parts', sparePartRoutes)
 
-// Error handling middleware (contoh sederhana)
+// Global error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  res.status(500).json({ message: 'Terjadi kesalahan server', detail: err.message, stack: err.stack })
+  const status = err.statusCode || 500;
+  const message = err.isOperational ? err.message : 'Terjadi kesalahan server internal.';
+  res.status(status).json({ message, ...(process.env.NODE_ENV === 'development' && { detail: err.stack }) })
 })
 
 export default app
